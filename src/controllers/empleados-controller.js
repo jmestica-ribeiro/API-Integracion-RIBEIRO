@@ -3,10 +3,10 @@ const axios = require('axios');
 // Nuevo en viewID = 50582
 const nuevoEmpleado = async (req, res) => {
 
-    const {PersonaNombre, PersonaApellido, Codigo, Email, FechaAlta, IdentificacionTributariaNumero} = req.body
-    const {TOKEN_VISMA, TOKEN_MICROSOFT} = req
-    const generatedPassword = `Ribeirotr${Codigo}`
+    const {object} = req.body
+    const {TOKEN_VISMA, TOKEN_MICROSOFT, TOKEN_FINNEGANS} = req
 
+    const {code: id_empleado} = object
 
 
     //--------------------------------------- Petición 1: Información a SharePoint - BD Generales Personal ----------------
@@ -21,36 +21,56 @@ const nuevoEmpleado = async (req, res) => {
     // ------------------------------------------------ FIN PETICIÓN ----------------------------------------------------
 
     // --------------------------------------- Petición 2: Información a TuRecibo ---------------------------------------
-    data_visma = {
-        usuario: `${PersonaNombre}${PersonaApellido}`,
-        nombre:  PersonaNombre,
-        apellido: PersonaApellido,
-        mail: Email,
-        pass: generatedPassword,
-        dni:  IdentificacionTributariaNumero.match(/-(.*?)-/)[1],
-        cuil: IdentificacionTributariaNumero.replace(/-/g, ""),
-        fecha_contratacion: FechaAlta,
-        numero_legajo: Codigo,
-    
-    }
+   
+    //1- Buscar empleado en Finnegans con legajo
+    let empleado_finnegans = await (await axios.get(`${process.env.FINNEGANS_API_BASE_URL}/Empleado/${id_empleado}?ACCESS_TOKEN=${TOKEN_FINNEGANS}`)).data
 
-    const results = await Promise.allSettled([
-        axios.post(`${process.env.DEMO_URL_VISMA}/v2/admin-mod/users`, data_visma, {
+    let {IdentificacionTributariaNumero: cuilEmpleado} = empleado_finnegans
+    cuilEmpleado = cuilEmpleado.replaceAll("-", "")
+
+    //2- Chequear si el empleado existe en VISMA 
+
+    const check_user = await axios.get(`${process.env.PRODUCTION_URL_VISMA}/v2/admin-mod/users/search?filter=${cuilEmpleado}`, 
+        {
             headers: {
-                'Authorization': `Bearer ${TOKEN_VISMA}`
+                Authorization: `Bearer ${TOKEN_VISMA}`
             }
-        }), 
-    ]);
+        }
+    )
+    
+    console.log(check_user.data)    
 
-    console.log('------------------------------------')
-    console.log(`Petición VISMA: ${results[0].status}`)
-    console.log('------------------------------------')
+   
+    // data_visma = {
+    //     usuario: `${PersonaNombre}${PersonaApellido}`,
+    //     nombre:  PersonaNombre,
+    //     apellido: PersonaApellido,
+    //     mail: Email,
+    //     pass: generatedPassword,
+    //     dni:  IdentificacionTributariaNumero.match(/-(.*?)-/)[1],
+    //     cuil: IdentificacionTributariaNumero.replace(/-/g, ""),
+    //     fecha_contratacion: FechaAlta,
+    //     numero_legajo: Codigo,
+    
+    // }
 
-    if(results[0].status == 'rejected'){
-        console.log(results[0].reason.response.data.codes[0].message)
-    }
+    // const results = await Promise.allSettled([
+    //     axios.post(`${process.env.DEMO_URL_VISMA}/v2/admin-mod/users`, data_visma, {
+    //         headers: {
+    //             'Authorization': `Bearer ${TOKEN_VISMA}`
+    //         }
+    //     }), 
+    // ]);
 
-    // --------------------------------------- FIN PETICIÓN ---------------------------------------
+    // console.log('------------------------------------')
+    // console.log(`Petición VISMA: ${results[0].status}`)
+    // console.log('------------------------------------')
+
+    // if(results[0].status == 'rejected'){
+    //     console.log(results[0].reason.response.data.codes[0].message)
+    // }
+
+    // // --------------------------------------- FIN PETICIÓN ---------------------------------------
     
     res.status(200).json({message: 'WebHook procesado'})
     

@@ -1,4 +1,5 @@
 const axios = require('axios');
+const qs = require('qs')
 
 // Almacenamiento de token
 let accessToken = null;
@@ -6,20 +7,15 @@ let accessToken = null;
 let tokenReceivedAt = null; 
 
 
-//---------------------------------------------- Obtener Token de VISMA --------------------------------------------------
+//---------------------------------------------- Obtener Token de FINNEGANS --------------------------------------------------
 
 async function loginAndGetToken() {
     try {
 
         //Login 
-        const response = await axios.post(`${process.env.PRODUCTION_URL_VISMA}/v2/auth-mod/login`, 
+        const response = await axios.get(`${process.env.FINNEGANS_API_BASE_URL}/oauth/token?grant_type=client_credentials&client_id=${process.env.FINNEGANS_API_CLIENT_ID}&client_secret=${process.env.FINNEGANS_API_CLIENT_SECRET}`);
 
-            //Credentials
-            {user: process.env.PRODUCTION_USER_VISMA,
-            password: process.env.PRODUCTION_PASS_VISMA}
-        );
-
-        return response.data.jwt
+        return response.data
 
     } catch (error) {
 
@@ -31,10 +27,10 @@ async function loginAndGetToken() {
 
 
 // Middleware para autenticar y renovar el token si es necesario
-async function authenticateVisma(req, res, next) {
+async function authenticateFinnegans(req, res, next) {
 
     // Verificación de expiración
-    const tokenExpirationTime = 12 * 60 * 60 * 1000;  // 12 horas en milisegundos
+    const tokenExpirationTime = 8 * 60 * 60 * 1000;  // 8 horas en milisegundos
 
     // Si el token no existe o ha expirado, obtenemos un nuevo token
     if (!accessToken || Date.now() - tokenReceivedAt > tokenExpirationTime) {
@@ -48,10 +44,10 @@ async function authenticateVisma(req, res, next) {
     }
 
     // Se agrega Token a body
-    req.TOKEN_VISMA = accessToken
+    req.TOKEN_FINNEGANS = accessToken
 
     // Siguiente middleware/ruta
     next();
 }
 
-module.exports = authenticateVisma;
+module.exports = authenticateFinnegans;
