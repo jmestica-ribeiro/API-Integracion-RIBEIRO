@@ -23,22 +23,58 @@ const nuevoEmpleado = async (req, res) => {
     // --------------------------------------- Petición 2: Información a TuRecibo ---------------------------------------
    
     //1- Buscar empleado en Finnegans con legajo
+ 
     let empleado_finnegans = await (await axios.get(`${process.env.FINNEGANS_API_BASE_URL}/Empleado/${id_empleado}?ACCESS_TOKEN=${TOKEN_FINNEGANS}`)).data
 
     let {IdentificacionTributariaNumero: cuilEmpleado} = empleado_finnegans
-    cuilEmpleado = cuilEmpleado.replaceAll("-", "")
+        cuilEmpleado = cuilEmpleado.replaceAll("-", "") 
 
     //2- Chequear si el empleado existe en VISMA 
 
-    const check_user = await axios.get(`${process.env.PRODUCTION_URL_VISMA}/v2/admin-mod/users/search?filter=${cuilEmpleado}`, 
-        {
+    let check_user;
+
+    try {
+        check_user = await axios.get(
+          `${process.env.PRODUCTION_URL_VISMA}/v2/admin-mod/users/search?filter=${cuilEmpleado}`,
+          {
             headers: {
-                Authorization: `Bearer ${TOKEN_VISMA}`
+              Authorization: `Bearer ${TOKEN_VISMA}`
             }
+          }
+        );
+        // --Caso: usuario ya está registrado en VISMA, se hace update de los datos
+        console.log("Usuario encontrado:", check_user.data);
+
+        /* Se tienen que hacer dos peticiones: 
+            - Uno para actualizar datos generales: DNI, nombre, apellido, mail, CUIL, fecha de nac., fecha de contratación, nro. legajo
+            - Uno para actualizar sector (Equivalente a CECO) y locación (Equivalente a CCT).
+        */
+
+      
+      } catch (error) {
+        if (error.response) {
+          
+            //--Caso: usuario no registrado en VISMA, se registra como nuevo usuario
+            if (error.response.status === 404) {
+            console.log("Usuario no encontrado (404)");
+
+            /* Se tiene que hacer dos peticiones:     
+                - Una para crear el usuario 
+                - Otra para asignar locación */
+            
+            
+
+
+          } else {
+            console.log("Error en la respuesta:", error.response.status, error.response.data);
+          }
+        } else {
+          console.log("Error fuera de la respuesta HTTP:", error.message);
         }
-    )
+      }
     
-    console.log(check_user.data)    
+    // check_user = check_user.data.data[0]
+    
 
    
     // data_visma = {

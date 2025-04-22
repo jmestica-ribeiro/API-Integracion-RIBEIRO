@@ -8,7 +8,7 @@ const authenticateFinnegans = require('../middleware/auth-finnegans')
 const authenticateMicrosoftAPI = require('../middleware/microsoft-auth-middleware')
 
 //Nuevo o update de colaborador en viewID = 50582 | Middlewares de autenticación en VISMA y Microsoft 
-router.post('/nuevoempleado',authenticateVisma, authenticateFinnegans,  empleadosController.nuevoEmpleado)
+router.post('/empleado',authenticateVisma, authenticateFinnegans,  empleadosController.nuevoEmpleado)
 
 
 module.exports = router

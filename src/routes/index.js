@@ -4,6 +4,7 @@ const router = express.Router()
 //Routers
 const authRouter = require('./auth-router')
 const empleadosRouter = require('./empleados-router')
+const equiposRouter = require('./equipos-router')
 const authenticateToken = require('../middleware/auth-middleware')
 
 
@@ -14,10 +15,7 @@ router.use('/auth', authRouter)
 router.use('/empleados', authenticateToken , empleadosRouter)
 
 //Equipos --- con autenticación vía JWT
-// router.use('/equipos', equiposRouter)
-
-//CECO --- con autenticación vía JWT
-// router.use('/ceco', cecoRouter)
+router.use('/equipos', authenticateToken, equiposRouter)
 
 //Almacen --- con autenticación vía JWT
 // router.use('/ceco', cecoRouter)
